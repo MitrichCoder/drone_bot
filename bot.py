@@ -11,7 +11,14 @@ from questions import questions
 load_dotenv()
 
 API_TOKEN = os.getenv("BOT_TOKEN")
-RESULT_RECIPIENTS = [int(uid) for uid in os.getenv("RESULT_RECIPIENTS").split(",")]
+if not API_TOKEN:
+    raise ValueError("BOT_TOKEN is not set in environment")
+
+recipients = os.getenv("RESULT_RECIPIENTS")
+if not recipients:
+    raise ValueError("RESULT_RECIPIENTS is not set")
+
+RESULT_RECIPIENTS = [int(uid) for uid in recipients.split(",")]
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot)
@@ -71,7 +78,10 @@ async def send_question(user_id):
             with open(q["images"][0], "rb") as f:
                 await bot.send_photo(chat_id=user_id, photo=f, caption=f"{progress}\n{q['question']}", reply_markup=markup)
         elif len(q["images"]) > 1:
-            media = [InputMediaPhoto(open(img, "rb")) for img in q["images"]]
+            media = []
+            for img_path in q["images"]:
+                with open(img_path, "rb") as f:
+                    media.append(InputMediaPhoto(f.read()))
             await bot.send_media_group(chat_id=user_id, media=media)
             await bot.send_message(chat_id=user_id, text=f"{progress}\n{q['question']}", reply_markup=markup)
         else:
@@ -90,7 +100,10 @@ async def handle_answer(callback: types.CallbackQuery):
     q = data["questions"][data["current"]]
     selected = callback.data
 
-    await callback.message.edit_reply_markup(reply_markup=None)
+    try:
+        await callback.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
 
     if selected == q["correct"]:
         data["score"] += 1
@@ -137,7 +150,10 @@ async def finish_test(user_id):
 async def handle_restart(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     user_data[user_id] = {}  # сбрасываем всё
-    await callback.message.delete()
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
     await bot.send_message(user_id, "Пожалуйста, введите ваше имя перед повторным прохождением теста:")
 
 async def start_timer(user_id, timeout):
