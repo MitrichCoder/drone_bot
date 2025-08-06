@@ -1,11 +1,10 @@
 services:
   - type: web
     name: drone-bot
-    runtime: python
     env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python bot.py"
+    runtime: python
     plan: free
-    pythonVersion: 3.11.8
     region: frankfurt
-    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    pythonVersion: 3.11.8
